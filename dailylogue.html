@@ -1,0 +1,483 @@
+<<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Just a Life in My Day</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+  />
+  <style>
+    body {
+      font-family: Consolas, monospace;
+      background-color: #6b7280; /* mid gray */
+    }
+    .day-box {
+      width: 24px;
+      height: 24px;
+      border: 1px solid #9ca3af; /* gray-400 */
+      cursor: pointer;
+      transition: background-color 0.3s, border-style 0.3s;
+    }
+    .day-box.dashed {
+      border-style: dashed;
+      background-color: transparent !important;
+    }
+    .color-picker {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .color-option {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 1px solid #374151; /* gray-700 */
+      transition: transform 0.2s;
+    }
+    .color-option:hover {
+      transform: scale(1.2);
+    }
+    /* Changed unfilled color option from white to lavender */
+    .color-option.unfilled {
+      background-color: #c4b5fd; /* lavender */
+      border: 1px solid #9ca3af; /* gray-400 */
+    }
+    .sticky-note {
+      background-color: #c4b5fd; /* lavender */
+      padding: 12px;
+      width: 280px;
+      max-height: 400px;
+      overflow-y: auto;
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      font-size: 14px;
+      color: #1f2937; /* gray-800 */
+      display: flex;
+      flex-direction: column;
+      /* Initially hidden until a date is selected */
+      display: none;
+      z-index: 1100;
+    }
+    .sticky-note.visible {
+      display: flex;
+    }
+    .sticky-note h2 {
+      font-weight: bold;
+      margin-bottom: 8px;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sticky-note-close {
+      background: transparent;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: #6b7280;
+      transition: color 0.2s;
+    }
+    .sticky-note-close:hover {
+      color: #dc2626;
+    }
+    .task-input {
+      border: none;
+      border-bottom: 1px solid #6b7280;
+      padding: 4px 0;
+      outline: none;
+      font-family: Consolas, monospace;
+      font-size: 14px;
+      margin-bottom: 8px;
+      background: transparent;
+      color: #1f2937;
+    }
+    .task-list {
+      flex-grow: 1;
+      overflow-y: auto;
+      margin-bottom: 8px;
+    }
+    .task-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .task-item label {
+      flex-grow: 1;
+      cursor: pointer;
+      user-select: none;
+      /* Make label editable */
+      outline: none;
+    }
+    .task-item label[contenteditable="true"] {
+      border-bottom: 1px dashed #6b7280;
+      cursor: text;
+      user-select: text;
+    }
+    .task-item button {
+      background: transparent;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0 4px;
+      transition: color 0.2s;
+    }
+    .task-item button:hover {
+      color: #dc2626; /* red-600 */
+    }
+    .progress-bar-container {
+      height: 20px;
+      background-color: #d1d5db; /* gray-300 */
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 8px;
+      user-select: none;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background-color: #5a341a; /* dark brown */
+      width: 0%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      align-items: center;
+      user-select: none;
+    }
+    .month-name {
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: black;
+      font-size: 16px;
+    }
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 24px);
+      gap: 4px;
+    }
+    .color-picker-popup {
+      position: absolute;
+      background: white;
+      border: 1px solid #9ca3af;
+      border-radius: 6px;
+      padding: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      z-index: 1000;
+      display: none;
+    }
+    /* New styles for layout fix */
+    /* Removed @apply rule for #monthsContainer because it is not processed by Tailwind CDN */
+    .month {
+      width: 280px; /* fixed width so 3 fit in a row on large screens */
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1 class="text-center font-bold text-black text-3xl mt-12 select-none">Just a life in my day</h1>
+
+  <div class="months-container mx-auto max-w-screen-lg flex flex-wrap justify-center gap-6 p-4" id="monthsContainer" aria-label="Months and days calendar"></div>
+
+  <div class="sticky-note" id="stickyNote" role="region" aria-label="Sticky notes with tasks">
+    <h2 id="stickyNoteHeader">Tasks</h2>
+    <div class="progress-bar-container" aria-label="Task progress">
+      <div class="progress-bar-fill" id="progressBarFill">0%</div>
+    </div>
+    <input
+      type="text"
+      id="taskInput"
+      class="task-input"
+      placeholder="Add a new task and press Enter"
+      aria-label="Add new task"
+    />
+    <div class="task-list" id="taskList" role="list"></div>
+  </div>
+
+  <div class="color-picker-popup" id="colorPickerPopup" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="color-picker" role="list">
+	<div class="color-option unfilled" tabindex="0" title="Unfilled" data-color="dashed"></div>
+        <div class="color-option" tabindex="0" title="Best day" style="background-color: #064e03;" data-color="#064e03"></div>
+        <div class="color-option" tabindex="0" title="Efficient day" style="background-color: #a7f3d0;" data-color="#a7f3d0"></div>
+        <div class="color-option" tabindex="0" title="Rest Day" style="background-color: black;" data-color="black"></div>
+        <div class="color-option" tabindex="0" title="Disastrous day" style="background-color: #dc2626;" data-color="#dc2626"></div>
+          </div>
+  </div>
+
+  <script>
+    // Data for months and days
+    const monthsData = [
+      { name: "January", days: 31, startDay: 1 },
+      { name: "February", days: 28, startDay: 1 },
+      { name: "March", days: 31, startDay: 1 },
+      { name: "April", days: 30, startDay: 1 },
+      { name: "May", days: 30, startDay: 1 },
+      { name: "June", days: 30, startDay: 1 },
+      { name: "July", days: 31, startDay: 1 },
+      { name: "August", days: 31, startDay: 1 },
+      { name: "September", days: 30, startDay: 1 },
+      { name: "October", days: 31, startDay: 1 },
+      { name: "November", days: 30, startDay: 1 },
+      { name: "December", days: 31, startDay: 1 },
+    ];
+
+    const monthsContainer = document.getElementById("monthsContainer");
+    const colorPickerPopup = document.getElementById("colorPickerPopup");
+    const stickyNote = document.getElementById("stickyNote");
+    const stickyNoteHeader = document.getElementById("stickyNoteHeader");
+    const taskInput = document.getElementById("taskInput");
+    const taskList = document.getElementById("taskList");
+    const progressBarFill = document.getElementById("progressBarFill");
+
+    let selectedDayBox = null;
+    let selectedDateKey = null; // Format: "Month Day"
+
+    // Create months and day boxes
+    function createMonths() {
+      monthsData.forEach((month) => {
+        const monthEl = document.createElement("div");
+        monthEl.className = "month";
+        monthEl.setAttribute("aria-label", month.name);
+
+        const monthNameEl = document.createElement("div");
+        monthNameEl.className = "month-name";
+        monthNameEl.textContent = month.name;
+        monthEl.appendChild(monthNameEl);
+
+        const daysGrid = document.createElement("div");
+        daysGrid.className = "days-grid";
+
+        for (let day = month.startDay; day <= month.days; day++) {
+          const dayBox = document.createElement("div");
+          dayBox.className = "day-box dashed";
+          dayBox.setAttribute("tabindex", "0");
+          dayBox.setAttribute("role", "button");
+          dayBox.setAttribute("aria-label", `${month.name} ${day}`);
+          dayBox.dataset.month = month.name;
+          dayBox.dataset.day = day;
+          dayBox.dataset.color = "dashed";
+
+          dayBox.addEventListener("click", (e) => {
+            e.stopPropagation();
+            openColorPicker(dayBox);
+          });
+          dayBox.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              openColorPicker(dayBox);
+            }
+          });
+
+          // Add click event to select date and show sticky note
+          dayBox.addEventListener("dblclick", (e) => {
+            e.stopPropagation();
+            selectDate(dayBox.dataset.month, dayBox.dataset.day);
+          });
+
+          // Also allow single click with Ctrl key to select date (for accessibility)
+          dayBox.addEventListener("click", (e) => {
+            if (e.ctrlKey) {
+              e.stopPropagation();
+              selectDate(dayBox.dataset.month, dayBox.dataset.day);
+            }
+          });
+
+          daysGrid.appendChild(dayBox);
+        }
+
+        monthEl.appendChild(daysGrid);
+        monthsContainer.appendChild(monthEl);
+      });
+    }
+
+    // Open color picker popup near the clicked day box
+    function openColorPicker(dayBox) {
+      selectedDayBox = dayBox;
+      const rect = dayBox.getBoundingClientRect();
+      colorPickerPopup.style.top = rect.bottom + window.scrollY + 6 + "px";
+      colorPickerPopup.style.left = rect.left + window.scrollX + "px";
+      colorPickerPopup.style.display = "flex";
+      colorPickerPopup.setAttribute("aria-hidden", "false");
+      // Focus first color option for accessibility
+      const firstColorOption = colorPickerPopup.querySelector(".color-option");
+      if (firstColorOption) firstColorOption.focus();
+    }
+
+    // Close color picker popup
+    function closeColorPicker() {
+      colorPickerPopup.style.display = "none";
+      colorPickerPopup.setAttribute("aria-hidden", "true");
+      selectedDayBox = null;
+    }
+
+    // Handle color option click
+    colorPickerPopup.addEventListener("click", (e) => {
+      if (e.target.classList.contains("color-option")) {
+        const color = e.target.dataset.color;
+        if (!selectedDayBox) return;
+        if (color === "dashed") {
+          selectedDayBox.style.backgroundColor = "transparent";
+          selectedDayBox.classList.add("dashed");
+          selectedDayBox.style.borderStyle = "dashed";
+          selectedDayBox.dataset.color = "dashed";
+        } else {
+          selectedDayBox.style.backgroundColor = color;
+          selectedDayBox.classList.remove("dashed");
+          selectedDayBox.style.borderStyle = "solid";
+          selectedDayBox.dataset.color = color;
+        }
+        closeColorPicker();
+      }
+    });
+
+    // Keyboard navigation for color options
+    colorPickerPopup.addEventListener("keydown", (e) => {
+      const focusable = Array.from(colorPickerPopup.querySelectorAll(".color-option"));
+      const index = focusable.indexOf(document.activeElement);
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        const nextIndex = (index + 1) % focusable.length;
+        focusable[nextIndex].focus();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        const prevIndex = (index - 1 + focusable.length) % focusable.length;
+        focusable[prevIndex].focus();
+      } else if (e.key === "Escape") {
+        closeColorPicker();
+      }
+    });
+
+    // Close color picker if clicking outside
+    document.addEventListener("click", (e) => {
+      if (!colorPickerPopup.contains(e.target)) {
+        closeColorPicker();
+      }
+    });
+
+    // Select a date and show tasks for that date
+    function selectDate(month, day) {
+      selectedDateKey = `${month} ${day}`;
+      stickyNoteHeader.textContent = `Tasks for ${selectedDateKey}`;
+      stickyNote.classList.add("visible");
+      loadTasks();
+    }
+
+    // Load tasks from localStorage for selectedDateKey
+    function loadTasks() {
+      if (!selectedDateKey) return;
+      const saved = localStorage.getItem(`tasks_${selectedDateKey}`);
+      tasks = saved ? JSON.parse(saved) : [];
+      renderTasks();
+      updateProgress();
+    }
+
+    // Save tasks to localStorage for selectedDateKey
+    function saveTasks() {
+      if (!selectedDateKey) return;
+      localStorage.setItem(`tasks_${selectedDateKey}`, JSON.stringify(tasks));
+    }
+
+    // Sticky note tasks logic
+    let tasks = [];
+
+    function renderTasks() {
+      taskList.innerHTML = "";
+      tasks.forEach((task, index) => {
+        const taskItem = document.createElement("div");
+        taskItem.className = "task-item";
+        taskItem.setAttribute("role", "listitem");
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.id = `task-${index}`;
+        checkbox.checked = task.completed;
+        checkbox.setAttribute("aria-label", `Mark task ${task.text} as completed`);
+
+        checkbox.addEventListener("change", () => {
+          tasks[index].completed = checkbox.checked;
+          saveTasks();
+          updateProgress();
+          renderTasks(); // Re-render to update label style
+        });
+
+        const label = document.createElement("label");
+        label.htmlFor = `task-${index}`;
+        label.textContent = task.text;
+        label.contentEditable = "true";
+        label.spellcheck = false;
+        label.style.textDecoration = task.completed ? "line-through" : "none";
+        label.style.color = task.completed ? "#6b7280" : "#1f2937";
+
+        // Save edits on blur or Enter key
+        label.addEventListener("blur", () => {
+          tasks[index].text = label.textContent.trim();
+          if (tasks[index].text === "") {
+            tasks.splice(index, 1);
+          }
+          saveTasks();
+          renderTasks();
+          updateProgress();
+        });
+        label.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            label.blur();
+          }
+        });
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.setAttribute("aria-label", `Delete task ${task.text}`);
+        deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+        deleteBtn.addEventListener("click", () => {
+          tasks.splice(index, 1);
+          saveTasks();
+          renderTasks();
+          updateProgress();
+        });
+
+        taskItem.appendChild(checkbox);
+        taskItem.appendChild(label);
+        taskItem.appendChild(deleteBtn);
+
+        taskList.appendChild(taskItem);
+      });
+    }
+
+    function updateProgress() {
+      const total = tasks.length;
+      if (total === 0) {
+        progressBarFill.style.width = "0%";
+        progressBarFill.textContent = "0%";
+        return;
+      }
+      const completed = tasks.filter((t) => t.completed).length;
+      const percent = Math.round((completed / total) * 100);
+      progressBarFill.style.width = percent + "%";
+      progressBarFill.textContent = percent + "%";
+    }
+
+    taskInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        const text = taskInput.value.trim();
+        if (text.length > 0) {
+          tasks.push({ text, completed: false });
+          taskInput.value = "";
+          saveTasks();
+          renderTasks();
+          updateProgress();
+        }
+      }
+    });
+
+    // Initialize
+    createMonths();
+  </script>
+</body>
+</html>
