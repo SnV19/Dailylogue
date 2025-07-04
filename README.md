@@ -1,7 +1,7 @@
 # 📔 Dailylogue
 
 **Dailylogue** is a simple, color-coded calendar and task tracker built using **HTML**, **TailwindCSS**, and **JavaScript**.  
-It helps you visually log each day with moods, track daily tasks, and reflect on your progress — all in a clean, offline-friendly design.
+It helps you visually log each day with moods, track daily tasks, and reflect on your progress : all in a clean, offline-friendly design.
 
 ---
 
@@ -12,7 +12,7 @@ It helps you visually log each day with moods, track daily tasks, and reflect on
 - Double-click  on a day to open a sticky note
 - Add, check off, and edit daily tasks
 - Live progress bar showing task completion
-- All data saved in local storage — no login needed
+- All data saved in local storage ; no login needed
 
 
 - **Color Mood Tags (shown on hover):**
