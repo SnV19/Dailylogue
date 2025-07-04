@@ -28,7 +28,7 @@ It helps you visually log each day with moods, track daily tasks, and reflect on
 
 ```
 Dailylogue/
-├── dailylogue.html     # All logic, styles, and layout inside one self-contained file
+├── index.html     # All logic, styles, and layout inside one self-contained file
 ```
 
 ---
@@ -36,7 +36,7 @@ Dailylogue/
 ## ▶️ How to Use
 
 1. Download or clone the repository.
-2. Open `dailylogue.html` in any modern web browser.
+2. Open `index.html` in any modern web browser.
 3. Click a day to color it by mood.
 4. Double-click  to open its task note.
 5. Add tasks and track progress visually.
